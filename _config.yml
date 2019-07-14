@@ -15,7 +15,7 @@
 # in the templates via {{ site.myvariable }}.
 title: Programming Robots
 description: >- # This site is about programming robots.
-baseurl: "Robots" # the subpath of your site, e.g. /blog
+baseurl: "/Robots" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  mjwhite8119
 
@@ -24,6 +24,12 @@ markdown: kramdown
 theme: minima
 plugins:
   - jekyll-feed
+
+defaults:
+  - scope:
+      path: "assets/images"
+    values:
+      image: true
 
 # Exclude from processing.
 # The following items will not be processed, by default. Create a custom list
