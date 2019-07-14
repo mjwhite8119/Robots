@@ -1,6 +1,7 @@
 ---
 layout: post
 title:  "PID Control for Robotics"
+excerpt: "This article is and introduction to the use of PID controllers in robotics."
 date:   2019-07-13 15:35:44 -0700
 category: Control
 permalink: /pid-control

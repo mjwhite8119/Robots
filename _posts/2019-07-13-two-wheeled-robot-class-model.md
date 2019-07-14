@@ -1,6 +1,7 @@
 ---
 layout: post
 title:  "Two-wheeled robot class model - part 1"
+excerpt: "This project will describe the programming class model for a two-wheeled differential drive robot.  This first part will describe the overall model hierachy and the drive train."
 date:   2019-07-12 15:35:44 -0700
 category: Projects
 permalink: /twr-model-part1

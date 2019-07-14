@@ -1,6 +1,7 @@
 ---
 layout: post
 title:  "Two-wheeled robot control"
+excerpt: "This article shows the control algorithms for the two-wheeled robot."
 date:   2019-07-13 15:35:44 -0700
 category: Projects
 permalink: /twr-model-control

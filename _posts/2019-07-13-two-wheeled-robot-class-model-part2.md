@@ -1,6 +1,7 @@
 ---
 layout: post
 title:  "Two-wheeled robot class model - part 2"
+excerpt: "This is a continuation of the two-wheeled robot class model and describes the Wheel, DCMotor, and Encoder classes."
 date:   2019-07-13 15:35:44 -0700
 category: Projects
 permalink: /twr-model-part2

@@ -3,10 +3,15 @@ layout: page
 title: Projects
 permalink: /projects/
 ---
-<p>This page lists the projects that I'm working on.</p>
 
 {% for post in site.posts reversed %}
   {% if post.category == "Projects" %}
-     <h4><a href="{{ post.url }}">{{ post.title }}</a></h4>
+     <h4>
+       <a class="post-link" href="{{ post.url | relative_url }}">
+         {{ post.title | escape }}
+       </a>
+     </h4>
+     {{ post.excerpt }}
+     <p></p>
   {% endif %}
 {% endfor %}
