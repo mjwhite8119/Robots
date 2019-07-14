@@ -9,7 +9,7 @@ This project will describe the programming for a two-wheeled differential drive 
 
 I’ll start by building a program model of a two-wheeled robot to implement its internal functionality, such as driving the wheels and counting encoder pulses.  This model won’t include any functionality to control how it gets to its destination.  That will be the job of the control loops described later.  In the first stage only the drive train is implemented for mobility.  Other functionality such as laser and ultrasonic range finders will be added later.  The programming model is written using C++ classes but you should be able to translate it into Python, which is the other language widely used with ROS.  Here’s a block diagram of the model:
 
-![Robots](/assets/images/Two-Wheeled-Robot-Slides.011.jpeg)
+![Robots]({{site.url}}{{site.baseurl}}/assets/images/Two-Wheeled-Robot-Slides.011.jpeg)
 
 After detailing the two-wheeled robot model I’ll go on to describe the control loops that are used to control the speed, position and orientation of the robot.  The position and orientation is known in the ROS world as its “pose”.  The outer loop will simply wait to receive a move command that it sends to a control loop to change the robot’s pose.
 
