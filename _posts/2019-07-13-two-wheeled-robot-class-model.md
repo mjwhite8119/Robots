@@ -1,9 +1,9 @@
 ---
 layout: post
-title:  "Two-wheeled robot class model"
-date:   2019-07-13 15:35:44 -0700
-categories: Projects
-permalink: /two-wheeled-robot-model
+title:  "Two-wheeled robot class model - part 1"
+date:   2019-07-12 15:35:44 -0700
+category: Projects
+permalink: /twr-model-part1
 ---
 This project will describe the programming for a two-wheeled differential drive robot.  The project will make use of the Robot Operating System (ROS) so the code examples will detail how this can be used.  There are two functionality goals for this project.  The first is to get it move forward a specified distance, and the second is to have it turn on the spot a certain number of degrees.  Although these may seem like simple tasks it does present some programming challenges requiring control feedback loops and PID controllers.  The plan is to start with a basic programming model and build it up into a fully autonomous mobile robot. 
 
@@ -19,7 +19,7 @@ The pose control loop tells the robot how fast it should spin each wheel and thi
 
 ![/Robots]({{site.url}}{{site.baseurl}}/assets/images/Two-Wheeled-Robot-Slides.005.jpeg)
 
-Wheeled Robot Kinematics
+### Wheeled Robot Kinematics
 
 When working with robots the word kinematics comes up a lot.  Kinematics simply describes how an object moves.  This project will only look at the internal kinematics of the robot, which describes the relationship between its wheel rotation and how it moves.   For internal kinematics the robot will move within a local reference frame, as shown in the following diagram.
 
@@ -29,13 +29,13 @@ Note that since the robot has standard fixed wheels that it cannot move sideways
 
 ![/Robots]({{site.url}}{{site.baseurl}}/assets/images/Control-Theory-Slides.012.jpeg)
 
-Hardware Architecture
+### Hardware Architecture
 
 The robot has a motor attached to each wheel and is balanced with wheel casters.  Each motor has an attached encoder.  The compute architecture is very simple at this stage.  It uses a single ESP32 micro controller for both the robot’s internal functionality, such as the actuation of its motors, and also its external control where we drive it towards a new position and orientation.  Here’s a picture of the rig that I’m using but the program should work with any two-wheeled differential drive robot.
 
 ![Robot image]({{site.url}}{{site.baseurl}}/assets/images/Project1Robot.JPG)
 
-Program Setup
+### Program Setup
 
 Before we get into the details of the two-wheeled robot model I need to go over the program setup.  I included this in an earlier post but I wanted to keep it all in one place.  I have ROS installed on a Raspberry Pi with the Ubuntu Mate OS.  All of the development is done within the Arduino IDE which includes the ROS library for Arduino plus some ESP32 specific libraries.  There are several online tutorials that show you how to setup the Arduino IDE for ROS.  In order to connect to ROS you’ll need to specify the network address of the machine on which the ROS server is hosted (the Raspberry Pi in my case) together with the port that it’s listening on.  You also have to create a node handle to manage the connection between your control program and the ROS server.
 
@@ -112,7 +112,7 @@ robot = new TwoWheeledRobot(&nh);
 
 The callback function receives a message to move the robot to a new position and orientation. I’ll go over the callback function in a later article when I document the control loops.
 
-TwoWheeledRobot Class
+### TwoWheeledRobot Class
 
 The model uses C++ classes to represent all of the robot’s components.  The following diagram shows how all of these components relate to each other.  The two-wheeled robot has a differential drive system, meaning that it has one motor for each wheel.  Each of the motors has an optical encoder attached.  This is all neatly wrapped up in a drive train.  The front and back wheel casters are also represented, but at this stage they don’t serve any function from a programming perspective.
 
@@ -158,7 +158,7 @@ TwoWheeledRobot::TwoWheeledRobot(ros::NodeHandle * nodeHandle)
 { 
 }
 {% endhighlight %}
-DriveTrain Class
+### DriveTrain Class
 
 The DriveTrain class encapsulates all of the robot’s mobility functionality. The following diagram shows the drive train configuration parameters on the left and its control functions on the right.
 
@@ -233,3 +233,169 @@ esp_timer_start_periodic(stateUpdateTimer, updatePeriodMicros); // Time in milli
 instances[0] = this; 
 }
 {% endhighlight %}
+
+The main tasks of the drive train is to set the speed of its wheels, and to report out its current pose state.  For wheeled robots this is commonly referred to as odometry.  The pose state is updated 20 times a second using a timer interrupt routine.  Functions to get the local pose and velocity are pretty self explanatory.  They simply return the vectors for those states.  I’ll start with the wheel speed control.
+
+{% highlight cpp %}
+//--- Drive train functions ---
+void setWheelSpeeds(float leftWheelSpeed, float rightWheelSpeed);
+
+void publishState();
+
+float * getLocalPose();
+
+float * getLocalVelocity();
+
+void printLocalPose();
+
+private:
+// --- Odometry state variables and methods ---
+
+// Keeps track of encoder pulses from each wheel
+uint32_t leftPositionLast_ = 0, rightPositionLast_ = 0;
+const int maxPulsesPerSecond_ = 600;
+
+static DriveTrain * instances [1];
+
+// Static instance to update robot state
+static void updateStateISR(void *pArg)
+{
+if (DriveTrain::instances[0] != NULL)
+DriveTrain::instances[0]->updateState_();
+}
+
+// Instance member to update robot state. Called from updateStateISR
+void updateState_(); 
+};
+{% endhighlight %}
+
+### Wheel Speed Control
+
+Setting the wheel speed is undoubtedly the most important control function for the DriveTrain.  The wheel speed is passed in as a ratio between -1 and +1, where a negative value would send the robot backwards and a positive value moves it forward.  Zero would stop the motor.  The motor however, only understands pulses per second for its control parameter, so we have to translate from the speed ratio to a pulse per second rate.  For example, if our maximum pulses per second is say 600 then that would represent a speed ratio of 1.0 forward or -1.0 backwards.  To reduce the speed we send in a fractional value, 0.5 for example.  This would cut our pulses per second down to 300.  This should all make more sense when we look at the motor and encoder models.
+
+{% highlight cpp %}
+// -----------------------------------------------------------------
+// Set the left and right wheel speeds 
+// Input is a speed ratio between -1.0 (backwards) and 1.0 (forward) 
+// Output is a wheel speed in pulses per/sec
+// -----------------------------------------------------------------
+void DriveTrain::setWheelSpeeds(float leftWheelSpeed, float rightWheelSpeed) {
+
+  // Translate the speed ratio into pulses per/sec.
+  // Where speed ratio of 1.0 equals 600 pulses per/sec
+  int leftPulseSetpoint = int(maxPulsesPerSecond_ * leftWheelSpeed);
+  int rightPulseSetpoint = int(maxPulsesPerSecond_ * rightWheelSpeed);
+  
+  leftWheel.setSpeed(leftPulseSetpoint); // Pulses per/sec
+  rightWheel.setSpeed(rightPulseSetpoint); // Pulses per/sec 
+} 
+{% endhighlight %}
+
+### Odometry
+
+Another function of the DriveTrain is to continuously update the robot’s odometry state and publish it to the outside world.  For this we use the ROS Odometry message type which is shown in the following diagram.  The Pose part of the message is the same as we saw earlier.  What’s been added is the Twist message that holds the linear and angular velocity.  The child_frame_id points to the robot itself and is usually called the base_link.  This is connected to the Odometry frame via the header.  This allows us to track the robot within a global frame.
+
+![Robots]({{site.url}}{{site.baseurl}}/assets/images/ROS-Slides.002.jpeg)
+
+The following diagram shows the difference between the local (internal kinematic) frame and the global (external kinematic) frame, referred to as the Odometry frame when dealing with wheeled robots.  Notice that the symbol for orientation has change from ψ (psi) to θ (theta) when we go from the local frame to the global frame.
+
+![/Robots]({{site.url}}{{site.baseurl}}/assets/images/Control-Theory-Slides.012.jpeg)
+
+The following code shows how the Odometry message is published to ROS for a wheeled robot.  Not all of the data variables are used since we’re only working on a 2D plane.  If this were a drone then all of the variables would be used.  A project note here is that at this stage I’m reporting out the robot’s local pose instead of its global pose.  For an Odometry message this should actually be tracking the X, Y, theta location within a workspace (your living room).  I’ll switch to the global frame later in the project.  See the next section for more on this.
+
+{% highlight cpp %}
+// ------------------------------------------------------
+// Publish current robot state to ROS
+// ------------------------------------------------------
+void DriveTrain::publishState() { 
+  
+  // Add the timestamp
+  state.header.stamp = nh_->now(); 
+
+  state.pose.pose.position.x = local_pose[X_POS];
+  state.pose.pose.position.y = local_pose[Y_POS]; // zero since cannot move sideways
+  state.pose.pose.orientation.y = local_pose[PSI]; // theta
+
+  state.twist.twist.linear.x = local_velocity[X_VELOCITY];
+  state.twist.twist.linear.y = local_velocity[Y_VELOCITY];  // Can't move instantaniously sideways
+  state.twist.twist.angular.y = local_velocity[Y_ANGULAR]; // angular yaw velocity in radians
+
+  // Publish
+  pub_odom->publish( &state );
+} 
+{% endhighlight %}
+
+Updating the state requires some understanding of wheeled robot kinematics.
+
+### Internal Kinematics
+
+Internal kinematics describes the relationship between a system’s internal variables and its motion.  In the case of a wheeled robot our internal variables would be its wheels, which can rotate and cause motion, assuming that they are in contact with the ground.  For a differential drive robot each wheel can move at a different speed, therefore we need to look at how each wheel contributes to the robot’s overall motion.  When we’re dealing with internal kinematics we can describe its movement in terms of a local frame.  In the robot’s local frame forward motion is indicated by the X direction.  To get its total movement in the X direction we can simply add the distance covered by each wheel and divide the result by 2. 
+
+So what about the Y direction?  If we had a Swedish wheel, also known as a Mecanum wheel, it would be able to move in any direction.  However, for this project I’m using standard wheels that can only roll in the direction of their orientation.  Therefore, its movement in the Y direction is always going to be zero.  This is referred to as a kinematic constraint.  We’re constrained to not move in the Y direction.
+
+The orientation is the angle measured from the X-axis of the local frame to the forward orientation of the robot.  So when we first start out the value of ψ would be 0.0, meaning that the robot would be aligned with its own local X-axis.  In the local frame there is no notion of coordinates such as east and west or front and back of building.  Those coordinate frames will be mapped to when we consider external kinematics.  In order to rotate the robot each wheel would need to move at a different speed therefore covering a different distance.  To compute the rotation you would subtract the left wheel distance from the right wheel distance and divide it by the length of the wheelbase.  The following diagram summarizes all of this.
+
+![/Robots]({{site.url}}{{site.baseurl}}/assets/images/Control-Theory-Slides.010.jpeg)
+
+### Update State
+
+Implementing the robot’s kinematics in code would look like the following.  The left and right wheel positions are obtained from the Wheel class.  This is the distance travelled since the robot was switched on.  The calculated pose is put into a pose vector.  I named the vector local_pose since the calculated pose is in the robot’s local frame.  The velocity is also calculated and placed in the velocity vector.  This process is called every 50 milliseconds. 
+   
+{% highlight cpp %}
+// ------------------------------------------------------
+// Update the current robot state 
+// ------------------------------------------------------
+void DriveTrain::updateState_() {
+  
+  // --- Get the distance delta since the last period ---  
+  float leftPosition = leftWheel.currentPosition();
+  float rightPosition = rightWheel.currentPosition();
+
+  // --- Update the local position and orientation ---
+  local_pose[X_POS] = (leftPosition + rightPosition) / 2.0; // distance in X direction 
+  local_pose[Y_POS] = 0.0; // distance in Y direction
+  local_pose[PSI] = (rightPosition - leftPosition) / wheelSeparation; // Change in orientation
+
+  // --- Update the velocity ---
+  float leftDistance = (leftPosition - leftPositionLast_); 
+  float rightDistance = (rightPosition - rightPositionLast_);
+  float delta_distance = (leftDistance + rightDistance) / 2.0; 
+  float delta_theta = (rightDistance - leftDistance) / wheelSeparation; // in radians
+ 
+  local_velocity[X_VELOCITY] = delta_distance / updatePeriodMicros; // Linear x velocity
+  local_velocity[Y_VELOCITY] = 0.0; 
+  local_velocity[Y_ANGULAR] = (delta_theta / updatePeriodMicros); // In radians per/sec
+
+  // ---  Save the last position values ---
+  leftPositionLast_ = leftPosition;    
+  rightPositionLast_ = rightPosition; 
+} 
+{% endhighlight %}
+
+The pose and velocity are available in vector form, which is made use of in the control loops.  For debugging purposes it can also be useful to print the pose out to the ROS console.  This is akin to printing to the serial port except that you don’t need to attach the robot to a really long USB cable.  You can also echo the published Odometry message out to the Linux terminal.  The published message can be recorded for later playback in a simulator.
+
+{% highlight cpp %}
+// ------------------------------------------------------
+// Returns the local robot state
+// ------------------------------------------------------
+float * DriveTrain::getLocalPose() { 
+  return local_pose;
+}
+
+// ---------------------------------------------------
+// Return local robot velocity of robot in meters/sec 
+// ---------------------------------------------------
+float * DriveTrain::getLocalVelocity() {
+  return local_velocity;
+}
+
+// ------------------------------------------------------
+// Returns the local robot state
+// ------------------------------------------------------
+void DriveTrain::printLocalPose() { 
+  ROSLOGString("Local pose X, Y, Psi");
+  ROSLOG3F(local_pose[X_POS], local_pose[Y_POS], local_pose[PSI]);
+}
+{% endhighlight %}
+
+That completes the DriveTrain class.  The [next post](twr-model-part2) will look at the Wheel, DCMotor, and Encoder classes.

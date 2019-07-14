@@ -1,0 +1,12 @@
+---
+layout: page
+title: Control
+permalink: /control/
+---
+<p>This page lists articles about Control and Feedback as it relates to robots.</p>
+
+{% for post in site.posts reversed %}
+  {% if post.category == "Control" %}
+     <h4><a href="{{ post.url }}">{{ post.title }}</a></h4>
+  {% endif %}
+{% endfor %}

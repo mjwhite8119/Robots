@@ -1,0 +1,12 @@
+---
+layout: page
+title: Projects
+permalink: /projects/
+---
+<p>This page lists the projects that I'm working on.</p>
+
+{% for post in site.posts reversed %}
+  {% if post.category == "Projects" %}
+     <h4><a href="{{ post.url }}">{{ post.title }}</a></h4>
+  {% endif %}
+{% endfor %}

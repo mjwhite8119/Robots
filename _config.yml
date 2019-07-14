@@ -14,7 +14,7 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 title: Programming Robots
-description: >- # This site is about programming robots.
+description: ""
 baseurl: "/Robots" # the subpath of your site, e.g. /blog
 url: "http://mjwhite8119.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  mjwhite8119
