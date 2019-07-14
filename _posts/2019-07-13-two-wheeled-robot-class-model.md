@@ -13,27 +13,27 @@ I’ll start by building a program model of a two-wheeled robot to implement its
 
 After detailing the two-wheeled robot model I’ll go on to describe the control loops that are used to control the speed, position and orientation of the robot.  The position and orientation is known in the ROS world as its “pose”.  The outer loop will simply wait to receive a move command that it sends to a control loop to change the robot’s pose.
 
-![/Robots](/assets/images/Two-Wheeled-Robot-Slides.003.jpeg)
+![/Robots]({{site.url}}{{site.baseurl}}/assets/images/Two-Wheeled-Robot-Slides.003.jpeg)
 
 The pose control loop tells the robot how fast it should spin each wheel and this will cascade down to the speed control loop that determines how much power to apply.  One of the challenges is to get the robot to go in a straight line.  This is not an easy as you may think unless the two motors just happen to be perfect clones of each other.  In reality this is never the case, so feedback control must be used to compensate for this.  Once the motors are spinning and the robot is moving its position and orientation is tracked so as it can be stopped after it has travelled a certain distance.
 
-![/Robots](/assets/images/Two-Wheeled-Robot-Slides.005.jpeg)
+![/Robots]({{site.url}}{{site.baseurl}}/assets/images/Two-Wheeled-Robot-Slides.005.jpeg)
 
 Wheeled Robot Kinematics
 
 When working with robots the word kinematics comes up a lot.  Kinematics simply describes how an object moves.  This project will only look at the internal kinematics of the robot, which describes the relationship between its wheel rotation and how it moves.   For internal kinematics the robot will move within a local reference frame, as shown in the following diagram.
 
-![/Robots](/assets/images/Control-Theory-Slides.009.jpeg)
+![/Robots]({{site.url}}{{site.baseurl}}/assets/images/Control-Theory-Slides.009.jpeg)
 
 Note that since the robot has standard fixed wheels that it cannot move sideways.  Therefore, the value of the Y component in the internal reference frame will always be zero.  Contrast this to external kinematics that describes the robot’s position and orientation relative to a point in a global reference frame, such as a room.  In this case, the Y component can be non-zero since we can drive the robot to any location in the room using a series of discrete maneuvers.
 
-![/Robots](/assets/images/Control-Theory-Slides.012.jpeg)
+![/Robots]({{site.url}}{{site.baseurl}}/assets/images/Control-Theory-Slides.012.jpeg)
 
 Hardware Architecture
 
 The robot has a motor attached to each wheel and is balanced with wheel casters.  Each motor has an attached encoder.  The compute architecture is very simple at this stage.  It uses a single ESP32 micro controller for both the robot’s internal functionality, such as the actuation of its motors, and also its external control where we drive it towards a new position and orientation.  Here’s a picture of the rig that I’m using but the program should work with any two-wheeled differential drive robot.
 
-![/Robots](/assets/images/Project1Robot.JPG)
+![/Robots]({{site.url}}{{site.baseurl}}/assets/images/Project1Robot.JPG)
 
 {% highlight ruby %}
 def print_hi(name)
