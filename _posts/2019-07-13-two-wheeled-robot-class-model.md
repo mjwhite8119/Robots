@@ -91,23 +91,23 @@ In the setup() you first connect to WiFi. The way in which you do this is depend
 //--------------------------------------------//
 void setup() {
 
-// Connect to WiFi
-connectWiFi();
+  // Connect to WiFi
+  connectWiFi();
 
-// Initialize the ROS nodehandle.
-nh.getHardware()->setConnection(server, serverPort);
+  // Initialize the ROS nodehandle.
+  nh.getHardware()->setConnection(server, serverPort);
 
-// Starting node
-nh.initNode();
-nodeHandleCreated = true;
-delay(1000);
+  // Starting node
+  nh.initNode();
+  nodeHandleCreated = true;
+  delay(1000);
 
-// Setup subscriber with callback function to receive the command
-sub_pose = new ros::Subscriber<geometry_msgs::Pose>("/pose_cmd", commandCb);
-nh.subscribe(*sub_pose);
+  // Setup subscriber with callback function to receive the command
+  sub_pose = new ros::Subscriber<geometry_msgs::Pose>("/pose_cmd", commandCb);
+  nh.subscribe(*sub_pose);
 
-// Create a robot. Pass the ROS node handle.
-robot = new TwoWheeledRobot(&nh);
+  // Create a robot. Pass the ROS node handle.
+  robot = new TwoWheeledRobot(&nh);
 }
 {% endhighlight %}
 
@@ -126,27 +126,27 @@ Looking at the code.  The TwoWheeledRobot constructor takes in the node handle t
 {% highlight cpp %}
 class TwoWheeledRobot
 {
-public:
+  public:
 
-// --- Constructor ---
-TwoWheeledRobot(ros::NodeHandle * nodeHandle);
+    // --- Constructor ---
+    TwoWheeledRobot(ros::NodeHandle * nodeHandle);
 
-// --- Robot configuration ---
+    // --- Robot configuration ---
 
-// Define the shape and size of the robot
-struct Geometry {
-uint8_t type = CYLINDER;
-float radius = 0.11;
-float length = 0.20;
-};
+    // Define the shape and size of the robot
+    struct Geometry {
+      uint8_t type = CYLINDER;
+      float radius = 0.11;
+      float length = 0.20;
+    };
 
-// Drive train of robot
-DriveTrain driveTrain;
+    // Drive train of robot
+    DriveTrain driveTrain;
 
-// Unmotorized wheels
-const float casterDiameter = 0.020; // caster diameter in meters 
-Wheel frontCaster = Wheel(casterDiameter, CASTER);
-Wheel backCaster = Wheel(casterDiameter, CASTER); 
+    // Unmotorized wheels
+    const float casterDiameter = 0.020; // caster diameter in meters 
+    Wheel frontCaster = Wheel(casterDiameter, CASTER);
+    Wheel backCaster = Wheel(casterDiameter, CASTER); 
 };
 {% endhighlight %}
 
@@ -155,7 +155,7 @@ The constructor just takes in the ROS node handle for use in publishing the robo
 {% highlight cpp %}
 // ----------------------------- Constructor ---------------------
 TwoWheeledRobot::TwoWheeledRobot(ros::NodeHandle * nodeHandle)
-:driveTrain(nodeHandle)
+  :driveTrain(nodeHandle)
 { 
 }
 {% endhighlight %}
@@ -169,13 +169,13 @@ The first thing to explain is the motor pinGroup.  The pinGroup is a structure o
 {% highlight cpp %}
 // Define the GPIO pins for the motors
 static struct DRAM_ATTR MotorPins {
-const byte motorDir1; // motor direction pin1
-const byte motorDir2; // motor direction pin2
-const byte enable; // Enable PMW 
-const byte encoderA; // encoder channel A
-const byte encoderB; // encoder channel B
+  const byte motorDir1; // motor direction pin1
+  const byte motorDir2; // motor direction pin2
+  const byte enable; // Enable PMW 
+  const byte encoderA; // encoder channel A
+  const byte encoderB; // encoder channel B
 } motorPinGroup[2] = {27, 26, 25, 36, 37, 
-14, 12, 13, 38, 39};
+  14, 12, 13, 38, 39};
 {% endhighlight %}
 
 Since the DriveTrain class has two wheels I assign a pinGroup number to the left and right wheels. The wheel diameter and type is also defined, which we pass to the Wheel class constructor to create each wheel. We also want to know how far apart the wheels are since this is critical to calculating path trajectory.
@@ -183,20 +183,20 @@ Since the DriveTrain class has two wheels I assign a pinGroup number to the left
 {% highlight cpp %}
 class DriveTrain
 {
-public:
+  public:
 
-// Constructor
-DriveTrain(ros::NodeHandle * nodeHandle);
+    // Constructor
+    DriveTrain(ros::NodeHandle * nodeHandle);
 
-uint8_t leftWheelPinGroup = 0; // GPIO pin group config.h
-uint8_t rightWheelPinGroup = 1; // GPIO pin group config.h
+    uint8_t leftWheelPinGroup = 0; // GPIO pin group config.h
+    uint8_t rightWheelPinGroup = 1; // GPIO pin group config.h
 
-const float wheelDiameter = 0.063; // wheel diameter in meters
-const uint8_t wheelType = STANDARD_FIXED;
-const float wheelSeparation = 0.179; // wheel separation in meters
+    const float wheelDiameter = 0.063; // wheel diameter in meters
+    const uint8_t wheelType = STANDARD_FIXED;
+    const float wheelSeparation = 0.179; // wheel separation in meters
 
-Wheel leftWheel = Wheel(leftWheelPinGroup, wheelDiameter, wheelType);
-Wheel rightWheel = Wheel(rightWheelPinGroup, wheelDiameter, wheelType);
+    Wheel leftWheel = Wheel(leftWheelPinGroup, wheelDiameter, wheelType);
+    Wheel rightWheel = Wheel(rightWheelPinGroup, wheelDiameter, wheelType);
 {% endhighlight %}
 
 The DriveTrain is responsible for keeping track of the current position and orientation state of the robot. The ROS message type Odometry is used for this purpose. The node handle is used to connect to the ROS server so as we can publish the current state of the robot. This is used by the control loop that drives the robot to its requested pose.
@@ -219,19 +219,19 @@ The constructor initializes the robotâ€™s state variables that track the robotâ€
 DriveTrain::DriveTrain(ros::NodeHandle * nodeHandle) 
 :nh_(nodeHandle)
 { 
-// Attach robot to the global odometry frame
-state.header.frame_id = "/odom"; // Global odometry frame
-state.child_frame_id = "/base_link"; // Robot local frame
+  // Attach robot to the global odometry frame
+  state.header.frame_id = "/odom"; // Global odometry frame
+  state.child_frame_id = "/base_link"; // Robot local frame
 
-// Setup publisher to report current state
-pub_odom = new ros::Publisher("/odom", &state);
-nh_->advertise(*pub_odom);
+  // Setup publisher to report current state
+  pub_odom = new ros::Publisher("/odom", &state);
+  nh_->advertise(*pub_odom);
 
-// Start state update timer
-const esp_timer_create_args_t periodic_timer_args = {.callback = &updateStateISR};
-esp_timer_create(&periodic_timer_args, &stateUpdateTimer);
-esp_timer_start_periodic(stateUpdateTimer, updatePeriodMicros); // Time in milliseconds (50) 
-instances[0] = this; 
+  // Start state update timer
+  const esp_timer_create_args_t periodic_timer_args = {.callback = &updateStateISR};
+  esp_timer_create(&periodic_timer_args, &stateUpdateTimer);
+  esp_timer_start_periodic(stateUpdateTimer, updatePeriodMicros); // Time in milliseconds (50) 
+  instances[0] = this; 
 }
 {% endhighlight %}
 
@@ -250,23 +250,23 @@ float * getLocalVelocity();
 void printLocalPose();
 
 private:
-// --- Odometry state variables and methods ---
+  // --- Odometry state variables and methods ---
 
-// Keeps track of encoder pulses from each wheel
-uint32_t leftPositionLast_ = 0, rightPositionLast_ = 0;
-const int maxPulsesPerSecond_ = 600;
+  // Keeps track of encoder pulses from each wheel
+  uint32_t leftPositionLast_ = 0, rightPositionLast_ = 0;
+  const int maxPulsesPerSecond_ = 600;
 
-static DriveTrain * instances [1];
+  static DriveTrain * instances [1];
 
-// Static instance to update robot state
-static void updateStateISR(void *pArg)
-{
-if (DriveTrain::instances[0] != NULL)
-DriveTrain::instances[0]->updateState_();
-}
+  // Static instance to update robot state
+  static void updateStateISR(void *pArg)
+  {
+    if (DriveTrain::instances[0] != NULL)
+      DriveTrain::instances[0]->updateState_();
+  }
 
-// Instance member to update robot state. Called from updateStateISR
-void updateState_(); 
+  // Instance member to update robot state. Called from updateStateISR
+  void updateState_(); 
 };
 {% endhighlight %}
 
