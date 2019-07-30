@@ -1,12 +1,12 @@
 ---
 layout: post
-title:  "Two-wheeled robot control"
+title:  "Two-wheeled robot class model - part 3"
 excerpt: "This article shows the control algorithms for the two-wheeled robot."
 date:   2019-07-13 15:35:44 -0700
 category: Projects
 permalink: /twr-model-control
 ---
-The first two [posts](twr-model-part1) described the programming model of the two-wheeled robot.  In this post I’ll show the control loops that drive the robot to its requested destination and orientation.  The control loops are arranged in cascaded fashion where the outer command loop calls the pose loop which calls the speed control loop.  I described the speed loop in a previous post, so here I’ll detail the command and pose control loops.
+The first two [posts](twr-model-part1) described the programming model of the two-wheeled robot.  In this post I’ll show the control loops that drive the robot to its requested destination and orientation.  The control loops are arranged in cascaded fashion where the outer command loop calls the pose loop which calls the speed control loop.  I described the motor speed loop in a previous post, so here I’ll detail the command and pose control loops.
 
 ![Robots]({{site.url}}{{site.baseurl}}/assets/images/Two-Wheeled-Robot-Slides.002.jpeg)
 
@@ -58,8 +58,9 @@ void loop() {
     
   // Loop until command is sent.
   if (commandCalled) {
+
     // Position control loop
-    poseController(refPose);
+    robot->poseController(refPose);
 
     // Reset commandCalled flag
     commandCalled = false;
@@ -77,7 +78,61 @@ Once we have a command request to move the robot we need to implement a controll
 
 ![Robots]({{site.url}}{{site.baseurl}}/assets/images/Two-Wheeled-Robot-Slides.004.jpeg)
 
-The first thing the poseController does is get the current pose from the robot.  The current pose is obtained using a vector containing the X, Y positions and the ψ orientation, as shown in the above diagram.  The current pose is subtracted from the reference pose using a function that subtracts two matrixes.  The original linear and angular error values are saved since the pose error will constantly change as we process the move loops.  We first process the linear move followed by the angular move.  The fabs() function returns the absolute value of a float variable.  For the angular move the control function takes in an arc radius around which the robot will turn.  In this case, the arc length is zero requesting that we turn on the spot.  There’s more detail on this later in the post.
+The pose control loop will be part of the *TwoWheeledRobot* model.  It requires four functions as shown in the diagram below.  The *moveLinear( )* and *moveAngular( )* functions implement the destination and orientation loops.  The *poseController( )* will call each loop in turn to complete the move request. 
+
+![Robots]({{site.url}}{{site.baseurl}}/assets/images/Two-Wheeled-Robot-Slides.020.jpeg)
+
+### TwoWheeledRobot Class 
+
+The kinematic functions of the *TwoWheeledRobot* class are shown below.  A vector is setup to hold the current pose error.  Other variables are used to time the control loop and provide constants for the PI controller.  There are also some constants to indicate which stage of the control loop is being processed.  
+
+{% highlight cpp %}
+class TwoWheeledRobot
+{
+  public:
+
+    // --- Constructor ---
+    TwoWheeledRobot(ros::NodeHandle * nodeHandle);
+    
+. . .
+    // --- Kinematic functions ---------
+    void moveAngular(float * refPose, float arcRadius);
+
+    void moveLinear(float * refPose);
+
+    void poseController(float * refPose);
+
+    // Drive robot in an arc with the specified radius
+    float calculateArcWheelRatios(float radius);
+  
+  private: 
+
+    // --- Variables used for kinematics 
+
+    // Error matrix for feedback loop
+    float poseError[3] = {0.0, 0.0, 0.0};
+
+    double currentTime_;
+    const double poseLoopPeriod_ = 0.05; // 50 milliseconds
+    const int poseLoopPeriodMillis_ = poseLoopPeriod_ * 1000; // 50 milliseconds
+    const int poseLoopPeriodsPerSecond_ = 1000/poseLoopPeriodMillis_;
+    const int timeOut_ = poseLoopPeriodsPerSecond_ * 8; // 8 seconds
+
+    // PI control for pose loop. Adjust gain constants as necessary
+    const float startUpKi_ = 0.05;  // Ki value to startup robot
+    const float Kp_ = 3.0; // Gets within 15% of target 
+    const float Ki_ = 0.3; // Maintains a minimum speed of 0.3
+    
+    // Move phases
+    const byte STARTUP = 1;
+    const byte RUNNING = 2;
+    const byte SHUTDOWN = 3;
+    const byte STOPPED = 4;
+    
+};
+{% endhighlight %}
+
+The first thing the poseController does is get the current pose from the robot.  The current pose is obtained using a vector containing the X, Y positions and the ψ orientation, as shown in the above diagram.  The current pose is subtracted from the reference pose using a function that subtracts two matrixes.  The original linear and angular error values are saved since the pose error will constantly change as we process the move loops.  We first process the linear move followed by the angular move.  The *fabs()* function returns the absolute value of a float variable.  For the angular move the control function takes in an arc radius around which the robot will turn.  In this case, the arc length is zero requesting that we turn on the spot.  There’s more detail on this later in the post.
 
 
 {% highlight cpp %}
