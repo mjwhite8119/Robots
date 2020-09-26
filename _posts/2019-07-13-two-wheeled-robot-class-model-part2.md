@@ -411,5 +411,5 @@ void IRAM_ATTR Encoder::encoderFired_() {
 }
 {% endhighlight %}
 
-That completes the two-wheeled robot model for now.  There will probably be other additions to the model as more capabilities are added to the project.  The [next post](/twr-model-control) will detail the control loops that move the robot in a straight line and rotate it on the spot.
+That completes the two-wheeled robot model for now.  There will probably be other additions to the model as more capabilities are added to the project.  The [next post](twr-model-control) will detail the control loops that move the robot in a straight line and rotate it on the spot.
 
